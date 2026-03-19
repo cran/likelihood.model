@@ -1,42 +1,9 @@
 # ==========================================================================
-# Re-export generics from algebraic.mle
+# Import generics from algebraic.mle for S3 method registration.
+# The generics themselves are available to users via Depends: algebraic.mle.
 # ==========================================================================
-
-#' Generics re-exported from algebraic.mle
-#'
-#' These generics are defined in \pkg{algebraic.mle} (or originate in
-#' \pkg{algebraic.dist} and are re-exported by \pkg{algebraic.mle}) and
-#' re-exported here so that users of \pkg{likelihood.model} can access
-#' them without explicitly loading those packages.
-#'
-#' \describe{
-#'   \item{\code{\link[algebraic.mle]{se}}}{Standard errors of parameter estimates}
-#'   \item{\code{\link[algebraic.mle]{bias}}}{Bias of parameter estimates}
-#'   \item{\code{\link[algebraic.mle]{aic}}}{Akaike Information Criterion}
-#'   \item{\code{\link[algebraic.mle]{loglik_val}}}{Log-likelihood value at the MLE}
-#'   \item{\code{\link[algebraic.mle]{score_val}}}{Score vector at the MLE}
-#'   \item{\code{\link[algebraic.mle]{sampler}}}{Sampling distribution of the estimator}
-#'   \item{\code{\link[algebraic.mle]{params}}}{Parameter estimates}
-#'   \item{\code{\link[algebraic.mle]{nparams}}}{Number of parameters}
-#'   \item{\code{\link[algebraic.mle]{observed_fim}}}{Observed Fisher information matrix}
-#'   \item{\code{\link[algebraic.mle]{obs}}}{Observed data stored in MLE object}
-#'   \item{\code{\link[algebraic.mle]{mse}}}{Mean squared error of the estimator}
-#' }
-#'
-#' @importFrom algebraic.mle se bias aic loglik_val score_val sampler params nparams observed_fim obs mse
-#' @aliases se bias aic loglik_val score_val sampler params nparams observed_fim obs mse
-#' @export se
-#' @export bias
-#' @export aic
-#' @export loglik_val
-#' @export score_val
-#' @export sampler
-#' @export params
-#' @export nparams
-#' @export observed_fim
-#' @export obs
-#' @export mse
-#' @name algebraic.mle-reexports
+#' @importFrom algebraic.mle se bias score_val observed_fim mse
+#' @importFrom algebraic.dist sampler params nparams obs
 NULL
 
 
@@ -54,7 +21,7 @@ NULL
 #' @param nobs Number of observations used in estimation
 #' @param converged Logical indicating if optimization converged
 #' @param optim_result Raw result from optim() for diagnostics
-#' @return An object of class `c("fisher_mle", "mle")`
+#' @return An object of class `c("fisher_mle", "mle_fit")`
 #' @importFrom stats coef confint cov printCoefmat qnorm rnorm
 #' @export
 fisher_mle <- function(par, vcov = NULL, loglik_val, hessian = NULL,
@@ -83,7 +50,7 @@ fisher_mle <- function(par, vcov = NULL, loglik_val, hessian = NULL,
       converged = converged,
       optim = optim_result
     ),
-    class = c("fisher_mle", "mle")
+    class = c("fisher_mle", "mle_fit")
   )
 }
 
@@ -214,7 +181,7 @@ summary.fisher_mle <- function(object, ...) {
       loglik = object$loglik,
       nobs = object$nobs,
       converged = object$converged,
-      aic = aic(object)
+      aic = stats::AIC(object)
     ),
     class = "summary_fisher_mle"
   )
@@ -247,16 +214,6 @@ print.summary_fisher_mle <- function(x, ...) {
 # Custom accessors for fisher_mle
 # --------------------------------------------------------------------------
 
-#' Extract log-likelihood value from fisher_mle
-#'
-#' @param x A fisher_mle object
-#' @param ... Additional arguments (ignored)
-#' @return The log-likelihood value at the MLE
-#' @export
-loglik_val.fisher_mle <- function(x, ...) {
-  x$loglik
-}
-
 #' Extract score vector from fisher_mle
 #'
 #' @param x A fisher_mle object
@@ -283,64 +240,65 @@ se.fisher_mle <- function(x, ...) {
   sqrt(diag(x$vcov))
 }
 
-#' Compute AIC for fisher_mle
+#' Bias for fisher_mle
 #'
-#' Returns the Akaike Information Criterion:
-#' AIC = -2 * logL + 2 * k
-#' where k is the number of parameters.
-#'
-#' @param x A fisher_mle object
-#' @param ... Additional arguments (ignored)
-#' @return AIC value
-#' @export
-aic.fisher_mle <- function(x, ...) {
-  -2 * x$loglik + 2 * length(x$par)
-}
-
-#' Compute BIC
-#'
-#' Returns the Bayesian Information Criterion:
-#' BIC = -2 * logL + k * log(n)
-#' where k is the number of parameters and n is the sample size.
-#'
-#' @param x A fisher_mle object
-#' @param ... Additional arguments (ignored)
-#' @return BIC value
-#' @export
-bic <- function(x, ...) {
-  UseMethod("bic")
-}
-
-#' @rdname bic
-#' @export
-bic.fisher_mle <- function(x, ...) {
-  if (is.null(x$nobs)) {
-    stop("Cannot compute BIC: nobs not available")
-  }
-  -2 * x$loglik + length(x$par) * log(x$nobs)
-}
-
-#' Bias for fisher_mle (asymptotic)
-#'
-#' Under regularity conditions, asymptotic bias of the MLE is zero.
+#' Estimates the bias of the MLE. Without a model and true parameter value,
+#' returns zeros (asymptotic bias is zero under regularity conditions).
+#' When both `theta` and `model` are provided, performs a Monte Carlo
+#' simulation study to estimate finite-sample bias.
 #'
 #' @param x A fisher_mle object
 #' @param theta True parameter value (for simulation studies)
+#' @param model A likelihood model with `rdata` and `fit` methods (optional)
+#' @param n_sim Number of Monte Carlo replicates (default 1000)
 #' @param ... Additional arguments (ignored)
-#' @return Bias estimate (vector of zeros)
+#' @return Bias estimate vector
 #' @export
-bias.fisher_mle <- function(x, theta = NULL, ...) {
-  rep(0, length(x$par))
+bias.fisher_mle <- function(x, theta = NULL, model = NULL, n_sim = 1000, ...) {
+  p <- length(x$par)
+
+  if (is.null(theta) || is.null(model)) {
+    return(rep(0, p))
+  }
+
+  if (is.null(x$nobs)) {
+    stop("Cannot estimate MC bias: nobs not available in fisher_mle object")
+  }
+
+  rdata_fn <- rdata(model)
+  fit_fn <- fit(model)
+  estimates <- matrix(NA_real_, nrow = n_sim, ncol = p)
+  n_ok <- 0L
+
+  for (i in seq_len(n_sim)) {
+    est <- tryCatch({
+      sim_data <- rdata_fn(theta, n = x$nobs)
+      coef(fit_fn(sim_data, par = theta))
+    }, error = function(e) NULL)
+
+    if (!is.null(est) && length(est) == p) {
+      n_ok <- n_ok + 1L
+      estimates[n_ok, ] <- est
+    }
+  }
+
+  if (n_ok < 10L) {
+    warning(sprintf("Only %d of %d MC replicates succeeded; bias estimate unreliable",
+                    n_ok, n_sim))
+    if (n_ok == 0L) return(rep(NA_real_, p))
+  }
+
+  colMeans(estimates[seq_len(n_ok), , drop = FALSE]) - theta
 }
 
 
 # --------------------------------------------------------------------------
 # algebraic.mle interface compatibility
 #
-# fisher_mle inherits from "mle" but uses different field names (e.g.,
+# fisher_mle inherits from "mle_fit" but uses different field names (e.g.,
 # $par instead of $theta.hat, $hessian instead of $info). These methods
 # ensure that algebraic.mle generics dispatch correctly to fisher_mle
-# objects without falling through to *.mle methods that access the
+# objects without falling through to *.mle_fit methods that access the
 # wrong fields.
 # --------------------------------------------------------------------------
 
@@ -392,15 +350,19 @@ obs.fisher_mle <- function(x) {
 #'
 #' Computes MSE = Var + Bias^2 (scalar) or Vcov + bias %*% t(bias) (matrix).
 #' Under regularity conditions, asymptotic bias is zero, so MSE equals the
-#' variance-covariance matrix.
+#' variance-covariance matrix. When `model` is provided, uses Monte Carlo
+#' bias estimation via [bias.fisher_mle()].
 #'
 #' @param x A fisher_mle object
 #' @param theta True parameter value (for simulation studies)
+#' @param model A likelihood model (optional, enables MC bias estimation)
+#' @param n_sim Number of MC replicates for bias estimation (default 1000)
+#' @param ... Additional arguments (ignored)
 #' @return MSE matrix or scalar
 #' @importFrom stats vcov
 #' @export
-mse.fisher_mle <- function(x, theta = NULL) {
-  b <- bias(x, theta)
+mse.fisher_mle <- function(x, theta = NULL, ..., model = NULL, n_sim = 1000) {
+  b <- bias(x, theta, model = model, n_sim = n_sim)
   V <- vcov(x)
   if (length(x$par) == 1L) V + b^2 else V + b %*% t(b)
 }
@@ -417,7 +379,7 @@ mse.fisher_mle <- function(x, theta = NULL) {
 #'
 #' @param boot_result Result from boot::boot()
 #' @param original_mle The original fisher_mle object
-#' @return An object of class `c("fisher_boot", "fisher_mle", "mle", "boot")`
+#' @return An object of class `c("fisher_boot", "fisher_mle", "mle_fit", "boot")`
 #' @export
 fisher_boot <- function(boot_result, original_mle) {
   structure(
@@ -432,7 +394,7 @@ fisher_boot <- function(boot_result, original_mle) {
       boot = boot_result,
       converged = TRUE
     ),
-    class = c("fisher_boot", "fisher_mle", "mle", "boot")
+    class = c("fisher_boot", "fisher_mle", "mle_fit", "boot")
   )
 }
 
@@ -529,7 +491,6 @@ print.fisher_boot <- function(x, ...) {
 #' @param x A fisher_mle object
 #' @param ... Additional arguments (ignored)
 #' @return Function that takes n and returns n x p matrix of samples
-#' @importFrom mvtnorm rmvnorm
 #' @export
 sampler.fisher_mle <- function(x, ...) {
   mu <- x$par
@@ -541,11 +502,16 @@ sampler.fisher_mle <- function(x, ...) {
 
   p <- length(mu)
 
+  if (p > 1 && !requireNamespace("mvtnorm", quietly = TRUE)) {
+    stop("Package 'mvtnorm' is required for multivariate sampling. ",
+         "Install it with: install.packages('mvtnorm')")
+  }
+
   function(n) {
     if (p == 1) {
       matrix(rnorm(n, mean = mu, sd = sqrt(sigma)), ncol = 1)
     } else {
-      rmvnorm(n, mean = mu, sigma = sigma)
+      mvtnorm::rmvnorm(n, mean = mu, sigma = sigma)
     }
   }
 }

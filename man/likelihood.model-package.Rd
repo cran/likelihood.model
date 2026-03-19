@@ -18,7 +18,7 @@ numerical differentiation via \code{numDeriv}.
 \strong{Core Infrastructure}:
 \itemize{
 \item \link{fisher_mle} / \link{fisher_boot}: Result objects from MLE fitting, with
-methods for \code{\link[=coef]{coef()}}, \code{\link[=vcov]{vcov()}}, \code{\link[=confint]{confint()}}, \code{\link[=se]{se()}}, \code{\link[=aic]{aic()}}, \code{\link[=bic]{bic()}},
+methods for \code{\link[=coef]{coef()}}, \code{\link[=vcov]{vcov()}}, \code{\link[=confint]{confint()}}, \code{\link[algebraic.mle:se]{algebraic.mle::se()}}, \code{\link[stats:AIC]{stats::AIC()}}, \code{\link[stats:AIC]{stats::BIC()}},
 \code{\link[=summary]{summary()}}.
 \item \code{\link[=fit]{fit()}}: Default MLE solver using \code{\link[=optim]{optim()}}. Models can override this
 with closed-form solutions (see \link{exponential_lifetime} for an example).
@@ -28,25 +28,13 @@ likelihood-based inference without probability statements.
 \item \code{\link[=lrt]{lrt()}}: Likelihood ratio test for nested models.
 }
 
-\strong{Model Builders}:
-\itemize{
-\item \link{likelihood_contr_model}: R6 class for building models from
-heterogeneous observation types (exact, censored, etc.) with
-dynamic dispatch to type-specific functions.
-\item \code{\link[=likelihood_name]{likelihood_name()}}: Wraps any standard R distribution (norm, weibull,
-exp, ...) with automatic censoring support.
-}
-
-\strong{Example Implementations}:
-Reference implementations showing how to satisfy the \code{likelihood_model}
-concept with hand-derived analytical solutions:
-\itemize{
-\item \link{weibull_uncensored}: Weibull with exact observations only.
-Demonstrates analytical score and hessian (10-100x faster than numerical).
-\item \link{exponential_lifetime}: Exponential with right-censoring support.
+\strong{Example Implementation}:
+\link{exponential_lifetime}: Exponential with right-censoring support.
 Demonstrates closed-form MLE (no optim needed), analytical FIM,
 and \code{\link[=rdata]{rdata()}} for Monte Carlo validation.
-}
+
+For contribution-based models with heterogeneous observation types,
+see the companion package \pkg{likelihood.contr}.
 }
 \seealso{
 Useful links:

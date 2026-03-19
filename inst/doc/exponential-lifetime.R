@@ -182,26 +182,6 @@ cat("  Empirical SE:      ", sd(mle_vals), "\n")
 cat("  Theoretical SE:    ", true_lambda / sqrt(n_obs), "\n")
 cat("  (SE = lambda/sqrt(n) from Fisher information)\n")
 
-## ----crossval-----------------------------------------------------------------
-set.seed(42)
-df_cv <- data.frame(t = rexp(100, rate = 2.0))
-
-model_analytical <- exponential_lifetime("t")
-model_generic <- likelihood_name("exp", ob_col = "t",
-                                  censor_col = "censor")
-
-# Need a censor column for likelihood_name
-df_cv_generic <- data.frame(t = df_cv$t, censor = rep("exact", 100))
-
-lambda_test <- 2.3
-ll_analytical <- loglik(model_analytical)(df_cv, lambda_test)
-ll_generic <- loglik(model_generic)(df_cv_generic, lambda_test)
-
-cat("Log-likelihood at lambda =", lambda_test, ":\n")
-cat("  Analytical model:", ll_analytical, "\n")
-cat("  Generic model:   ", ll_generic, "\n")
-cat("  Match:", all.equal(ll_analytical, ll_generic), "\n")
-
 ## ----session------------------------------------------------------------------
 sessionInfo()
 

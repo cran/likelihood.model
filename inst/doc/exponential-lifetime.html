@@ -366,8 +366,6 @@ Inference</a>
 </ul></li>
 <li><a href="#monte-carlo-validation-with-rdata" id="toc-monte-carlo-validation-with-rdata">Monte Carlo Validation with
 <code>rdata()</code></a></li>
-<li><a href="#cross-validation-with-likelihood_nameexp" id="toc-cross-validation-with-likelihood_nameexp">Cross-Validation with
-<code>likelihood_name(&quot;exp&quot;)</code></a></li>
 <li><a href="#summary" id="toc-summary">Summary</a></li>
 <li><a href="#session-info" id="toc-session-info">Session Info</a></li>
 </ul>
@@ -670,33 +668,6 @@ standard deviation:</p>
 <span id="cb13-27"><a href="#cb13-27" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  (SE = lambda/sqrt(n) from Fisher information)</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
 <span id="cb13-28"><a href="#cb13-28" tabindex="-1"></a><span class="co">#&gt;   (SE = lambda/sqrt(n) from Fisher information)</span></span></code></pre></div>
 </div>
-<div id="cross-validation-with-likelihood_nameexp" class="section level2">
-<h2>Cross-Validation with <code>likelihood_name(&quot;exp&quot;)</code></h2>
-<p>The analytical model should produce the same log-likelihood as the
-generic distribution-wrapping approach:</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>df_cv <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t =</span> <span class="fu">rexp</span>(<span class="dv">100</span>, <span class="at">rate =</span> <span class="fl">2.0</span>))</span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a>model_analytical <span class="ot">&lt;-</span> <span class="fu">exponential_lifetime</span>(<span class="st">&quot;t&quot;</span>)</span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a>model_generic <span class="ot">&lt;-</span> <span class="fu">likelihood_name</span>(<span class="st">&quot;exp&quot;</span>, <span class="at">ob_col =</span> <span class="st">&quot;t&quot;</span>,</span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a>                                  <span class="at">censor_col =</span> <span class="st">&quot;censor&quot;</span>)</span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co"># Need a censor column for likelihood_name</span></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a>df_cv_generic <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(<span class="at">t =</span> df_cv<span class="sc">$</span>t, <span class="at">censor =</span> <span class="fu">rep</span>(<span class="st">&quot;exact&quot;</span>, <span class="dv">100</span>))</span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a>lambda_test <span class="ot">&lt;-</span> <span class="fl">2.3</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a>ll_analytical <span class="ot">&lt;-</span> <span class="fu">loglik</span>(model_analytical)(df_cv, lambda_test)</span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a>ll_generic <span class="ot">&lt;-</span> <span class="fu">loglik</span>(model_generic)(df_cv_generic, lambda_test)</span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;Log-likelihood at lambda =&quot;</span>, lambda_test, <span class="st">&quot;:</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; Log-likelihood at lambda = 2.3 :</span></span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Analytical model:&quot;</span>, ll_analytical, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt;   Analytical model: -46</span></span>
-<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Generic model:   &quot;</span>, ll_generic, <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="co">#&gt;   Generic model:    -46</span></span>
-<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">&quot;  Match:&quot;</span>, <span class="fu">all.equal</span>(ll_analytical, ll_generic), <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
-<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt;   Match: TRUE</span></span></code></pre></div>
-</div>
 <div id="summary" class="section level2">
 <h2>Summary</h2>
 <p>The <code>exponential_lifetime</code> model demonstrates several
@@ -741,46 +712,46 @@ handle censoring naturally</td>
 </tbody>
 </table>
 <p>These patterns apply to any distribution where you want tighter
-integration than <code>likelihood_name()</code> provides. See
-<code>weibull_uncensored</code> for another example with analytical
-derivatives (but without a closed-form MLE).</p>
+integration than a generic wrapper provides. For contribution-based
+models with heterogeneous observation types, see the
+<code>likelihood.contr</code> package.</p>
 </div>
 <div id="session-info" class="section level2">
 <h2>Session Info</h2>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="co">#&gt; R version 4.3.3 (2024-02-29)</span></span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-pc-linux-gnu (64-bit)</span></span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#&gt; Running under: Ubuntu 24.04.3 LTS</span></span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0 </span></span>
-<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0</span></span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       </span></span>
-<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="co">#&gt;  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
-<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          </span></span>
-<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="co">#&gt; [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
-<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co">#&gt; time zone: America/Chicago</span></span>
-<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="co">#&gt; tzcode source: system (glibc)</span></span>
-<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
-<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
-<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
-<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="co">#&gt; [1] algebraic.dist_0.1.0   algebraic.mle_0.9.0    likelihood.model_0.9.1</span></span>
-<span id="cb15-24"><a href="#cb15-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
-<span id="cb15-25"><a href="#cb15-25" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
-<span id="cb15-26"><a href="#cb15-26" tabindex="-1"></a><span class="co">#&gt;  [1] digest_0.6.39       R6_2.6.1            codetools_0.2-19   </span></span>
-<span id="cb15-27"><a href="#cb15-27" tabindex="-1"></a><span class="co">#&gt;  [4] numDeriv_2016.8-1.1 fastmap_1.2.0       xfun_0.54          </span></span>
-<span id="cb15-28"><a href="#cb15-28" tabindex="-1"></a><span class="co">#&gt;  [7] cachem_1.1.0        knitr_1.50          htmltools_0.5.8.1  </span></span>
-<span id="cb15-29"><a href="#cb15-29" tabindex="-1"></a><span class="co">#&gt; [10] generics_0.1.4      rmarkdown_2.30      lifecycle_1.0.5    </span></span>
-<span id="cb15-30"><a href="#cb15-30" tabindex="-1"></a><span class="co">#&gt; [13] mvtnorm_1.3-3       cli_3.6.5           sass_0.4.10        </span></span>
-<span id="cb15-31"><a href="#cb15-31" tabindex="-1"></a><span class="co">#&gt; [16] jquerylib_0.1.4     compiler_4.3.3      boot_1.3-32        </span></span>
-<span id="cb15-32"><a href="#cb15-32" tabindex="-1"></a><span class="co">#&gt; [19] tools_4.3.3         evaluate_1.0.5      bslib_0.9.0        </span></span>
-<span id="cb15-33"><a href="#cb15-33" tabindex="-1"></a><span class="co">#&gt; [22] yaml_2.3.11         rlang_1.1.7         jsonlite_2.0.0     </span></span>
-<span id="cb15-34"><a href="#cb15-34" tabindex="-1"></a><span class="co">#&gt; [25] MASS_7.3-60.0.1</span></span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="co">#&gt; R version 4.3.3 (2024-02-29)</span></span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="co">#&gt; Platform: x86_64-pc-linux-gnu (64-bit)</span></span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="co">#&gt; Running under: Ubuntu 24.04.3 LTS</span></span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="co">#&gt; Matrix products: default</span></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="co">#&gt; BLAS:   /usr/lib/x86_64-linux-gnu/blas/libblas.so.3.12.0 </span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="co">#&gt; LAPACK: /usr/lib/x86_64-linux-gnu/lapack/liblapack.so.3.12.0</span></span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="co">#&gt; locale:</span></span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="co">#&gt;  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       </span></span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="co">#&gt;  [4] LC_COLLATE=C.UTF-8     LC_MONETARY=C.UTF-8    LC_MESSAGES=C.UTF-8   </span></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co">#&gt;  [7] LC_PAPER=C.UTF-8       LC_NAME=C              LC_ADDRESS=C          </span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="co">#&gt; [10] LC_TELEPHONE=C         LC_MEASUREMENT=C.UTF-8 LC_IDENTIFICATION=C   </span></span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="co">#&gt; time zone: America/Chicago</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="co">#&gt; tzcode source: system (glibc)</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="co">#&gt; attached base packages:</span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="co">#&gt; [1] stats     graphics  grDevices utils     datasets  methods   base     </span></span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co">#&gt; other attached packages:</span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="co">#&gt; [1] algebraic.dist_1.0.0   likelihood.model_1.0.0 algebraic.mle_2.0.2   </span></span>
+<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a><span class="co">#&gt; loaded via a namespace (and not attached):</span></span>
+<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co">#&gt;  [1] digest_0.6.39       R6_2.6.1            codetools_0.2-19   </span></span>
+<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="co">#&gt;  [4] numDeriv_2016.8-1.1 fastmap_1.2.0       xfun_0.54          </span></span>
+<span id="cb14-28"><a href="#cb14-28" tabindex="-1"></a><span class="co">#&gt;  [7] cachem_1.1.0        knitr_1.50          htmltools_0.5.8.1  </span></span>
+<span id="cb14-29"><a href="#cb14-29" tabindex="-1"></a><span class="co">#&gt; [10] generics_0.1.4      rmarkdown_2.30      lifecycle_1.0.5    </span></span>
+<span id="cb14-30"><a href="#cb14-30" tabindex="-1"></a><span class="co">#&gt; [13] mvtnorm_1.3-6       cli_3.6.5           sass_0.4.10        </span></span>
+<span id="cb14-31"><a href="#cb14-31" tabindex="-1"></a><span class="co">#&gt; [16] jquerylib_0.1.4     compiler_4.3.3      boot_1.3-32        </span></span>
+<span id="cb14-32"><a href="#cb14-32" tabindex="-1"></a><span class="co">#&gt; [19] tools_4.3.3         evaluate_1.0.5      bslib_0.9.0        </span></span>
+<span id="cb14-33"><a href="#cb14-33" tabindex="-1"></a><span class="co">#&gt; [22] yaml_2.3.11         rlang_1.1.7         jsonlite_2.0.0     </span></span>
+<span id="cb14-34"><a href="#cb14-34" tabindex="-1"></a><span class="co">#&gt; [25] MASS_7.3-60.0.1</span></span></code></pre></div>
 </div>
 
 
