@@ -1,11 +1,11 @@
-98ab7effbfcaff284e501cb24fd5096f *DESCRIPTION
+216dd3721738a6db586b2cd41134bb0d *DESCRIPTION
 d471c9d97395cb77965d040e8bfa0927 *LICENSE
 ffa2ae269193290958ed62e7f66a2b1e *NAMESPACE
-b4e2ea5153e238a5e3503a3ffc983a3a *NEWS.md
+f19eb580f313b6eb6050093df650a093 *NEWS.md
 79f58332f66ac2843b1c9b3e22cf28e7 *R/core-fisher_mle.R
 9980489524f879e9dbb1a30189cdb2a0 *R/core-fisherian.R
 d2072726b5ae4bbd9bc40c7097281b4e *R/core-fit.R
-f5842c7770c71784e055d18e2bb35ceb *R/core-generics.R
+13e9426d9f8cc60ed8e4cd9a56e83b29 *R/core-generics.R
 ba68da5451f38df65d004077fe64780e *R/core-lrt.R
 fa1f663f97a8f4b5d378bede30677b2c *R/example-exponential.R
 0d69ae38bc13738c82d2cf190cbb81cd *README.md
@@ -15,10 +15,10 @@ fa1f663f97a8f4b5d378bede30677b2c *R/example-exponential.R
 d24b9e7dbe80efbdf9db1e43adbf9fcf *inst/doc/algebraic-mle-integration.html
 caa2a881c3308ab82230cbd1579d9d67 *inst/doc/exponential-lifetime.R
 4ecfb99fe573ed274264b5a5c21fadfc *inst/doc/exponential-lifetime.Rmd
-3ee6cf9990a0e5bacbdf1108ded76844 *inst/doc/exponential-lifetime.html
+52d9af456f7f037e653a4a7eb7431a55 *inst/doc/exponential-lifetime.html
 16e41c46499a50cef15d2777fa34f9b2 *inst/doc/getting-started.R
 e8dfe1faa691e78863c7b4e43ab72f1b *inst/doc/getting-started.Rmd
-f835c0aa77add57d2a310b7ab00c7a1d *inst/doc/getting-started.html
+e7299acf707e8c145a2bcb24b26e064f *inst/doc/getting-started.html
 b1d42f1eed9c9fa63e673de855474bc0 *man/assumptions.Rd
 cb11cd5e48d39d581b4307a79a544cb1 *man/assumptions.exponential_lifetime.Rd
 f7cff64bc3f9bfe8240e1ecd7e28db55 *man/bias.fisher_boot.Rd
@@ -32,7 +32,7 @@ aea7be832d80729581413c08431db1d8 *man/evidence.Rd
 266c8196a595182033c0da98e6196c4b *man/exponential_lifetime.Rd
 fbcdc41afa30ecbac48f1fd0cfd33000 *man/fim.Rd
 9da10f7060f8988feff633b43269c441 *man/fim.exponential_lifetime.Rd
-b1bc58c7bf8f4aa5a6627be7acec5482 *man/fim.likelihood_model.Rd
+c03005187e0e431e67bd102be0ee2862 *man/fim.likelihood_model.Rd
 02cc7cf707d9b399a655de13feba35d3 *man/fisher_boot.Rd
 49856a9184430d43fd400ae53474ffbb *man/fisher_mle.Rd
 81dfaeb19a4e1dc601b9aaa2c75361f4 *man/fisherian.Rd
@@ -79,7 +79,7 @@ ee7947b940442f939b9dedb1792f1e1f *man/sampler.fisher_mle.Rd
 b7fc2344b00b784fcf273b834856d4d4 *man/summary.fisher_mle.Rd
 8cac83721c115ac741a1472fc0b9af20 *man/support.Rd
 bd44d2c3ab523b19836c8a2c79628eeb *man/vcov.fisher_mle.Rd
-752c3a1f6d02f8e3e2e7a6bf03f21899 *tests/test.R
+d0c78484bac03e47a059a400cbd5b75c *tests/test.R
 0eff67532470c04f26163865608c801f *vignettes/algebraic-mle-integration.Rmd
 4ecfb99fe573ed274264b5a5c21fadfc *vignettes/exponential-lifetime.Rmd
 e8dfe1faa691e78863c7b4e43ab72f1b *vignettes/getting-started.Rmd
