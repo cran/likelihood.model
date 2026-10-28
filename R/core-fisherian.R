@@ -7,6 +7,55 @@
 #' @name fisherian
 NULL
 
+# Numerical scales do not constrain parameter domains. Prefer local standard
+# errors; when unavailable, use the magnitude of a nonzero estimate or one.
+.profile_parameter_scale <- function(estimate, standard_error) {
+  scale <- abs(estimate)
+  scale[!is.finite(scale) | scale == 0] <- 1
+  usable <- is.finite(standard_error) & standard_error > 0
+  scale[usable] <- standard_error[usable]
+  scale
+}
+
+# Optimize the same nuisance likelihood for both profile APIs. Invalid model
+# evaluations have infinite objective, never an arbitrary finite likelihood.
+# A derivative-free fallback handles finite-difference probes across domains.
+.profile_optimum <- function(loglik, initial, scale) {
+  evaluate <- function(par) {
+    value <- tryCatch(suppressWarnings(loglik(par)),
+                      error = function(e) NA_real_)
+    if (!is.numeric(value) || length(value) != 1L || !is.finite(value)) {
+      return(NA_real_)
+    }
+    value
+  }
+
+  reference <- evaluate(initial)
+  if (is.finite(reference)) {
+    objective <- function(par) {
+      value <- evaluate(par)
+      if (!is.finite(value)) return(Inf)
+      # Centering removes arbitrary likelihood offsets from convergence tests.
+      reference - value
+    }
+    for (method in c("BFGS", "Nelder-Mead")) {
+      opt <- tryCatch(suppressWarnings(
+        optim(initial, objective, method = method,
+              control = list(maxit = 1000, reltol = 1e-10, parscale = scale))
+      ), error = function(e) NULL)
+      if (!is.null(opt) && isTRUE(opt$convergence == 0L) &&
+          is.finite(opt$value)) {
+        value <- evaluate(opt$par)
+        if (is.finite(value)) return(value)
+      }
+    }
+  }
+
+  warning("Profile optimization failed: no converged finite nuisance fit ",
+          "from the fitted starting values", call. = FALSE)
+  NA_real_
+}
+
 
 #' Support Function (Log Relative Likelihood)
 #'
@@ -83,6 +132,13 @@ relative_likelihood.fisher_mle <- function(x, theta, data, model, ...) {
 #' For multivariate parameters, specify `param` to get a profile likelihood
 #' interval for that parameter (profiling over the others).
 #'
+#' Profiling uses local BFGS optimization with a Nelder-Mead fallback when
+#' derivatives cross a parameter-domain boundary or optimization fails. Both
+#' start from the fitted nuisance parameters; neither infers constraints from
+#' parameter signs. Failed profiles return `NA` with a warning. Coupled domains
+#' can make the starting values infeasible at some profile values; an `NA`
+#' then indicates unavailable optimization, not an empty likelihood interval.
+#'
 #' @param x A fisher_mle object
 #' @param data Data frame used for likelihood computation
 #' @param model The likelihood model used for fitting
@@ -124,6 +180,7 @@ likelihood_interval.fisher_mle <- function(x, data, model, k = 8,
     idx <- param[i]
     se_i <- se_vals[idx]
     mle_i <- theta_hat[idx]
+    root_tol <- 1e-6 * .profile_parameter_scale(mle_i, se_i)
 
     if (p == 1) {
       # Univariate case: direct root finding
@@ -135,14 +192,14 @@ likelihood_interval.fisher_mle <- function(x, data, model, k = 8,
       lower_search <- mle_i - search_mult * se_i
       result[i, 1] <- tryCatch({
         uniroot(support_fn, c(lower_search, mle_i),
-                extendInt = "yes", tol = 1e-6)$root
+                extendInt = "yes", tol = root_tol)$root
       }, error = function(e) NA_real_)
 
       # Find upper bound
       upper_search <- mle_i + search_mult * se_i
       result[i, 2] <- tryCatch({
         uniroot(support_fn, c(mle_i, upper_search),
-                extendInt = "yes", tol = 1e-6)$root
+                extendInt = "yes", tol = root_tol)$root
       }, error = function(e) NA_real_)
 
     } else {
@@ -161,36 +218,17 @@ likelihood_interval.fisher_mle <- function(x, data, model, k = 8,
           return(ll(data, theta_full, ...) - ll_max)
         }
 
-        # Reparameterize: use log-transform for positive MLE values
-        # so the optimizer works in unconstrained space
-        pos_mask <- init_other > 0
-        init_unconstrained <- init_other
-        init_unconstrained[pos_mask] <- log(init_other[pos_mask])
-
-        opt_fn <- function(unconstrained) {
-          other_params <- unconstrained
-          other_params[pos_mask] <- exp(unconstrained[pos_mask])
+        # A fitted value does not define a parameter's domain. Optimize in
+        # the original coordinates; the model likelihood defines validity.
+        nuisance_loglik <- function(other_params) {
           theta_full <- numeric(p)
           theta_full[idx] <- theta_i
           theta_full[other_idx] <- other_params
           names(theta_full) <- names(theta_hat)
-          val <- tryCatch(
-            suppressWarnings(-ll(data, theta_full, ...)),
-            error = function(e) .Machine$double.xmax
-          )
-          if (!is.finite(val)) return(.Machine$double.xmax)
-          val
+          ll(data, theta_full, ...)
         }
-
-        opt <- tryCatch(
-          suppressWarnings(
-            optim(init_unconstrained, opt_fn, method = "BFGS",
-                  control = list(maxit = 100))
-          ),
-          error = function(e) list(value = Inf)
-        )
-
-        -opt$value - ll_max
+        .profile_optimum(nuisance_loglik, init_other,
+          .profile_parameter_scale(init_other, se_vals[other_idx])) - ll_max
       }
 
       # Root finding for profile
@@ -202,14 +240,14 @@ likelihood_interval.fisher_mle <- function(x, data, model, k = 8,
       lower_search <- mle_i - search_mult * se_i
       result[i, 1] <- tryCatch({
         uniroot(profile_root, c(lower_search, mle_i),
-                tol = 1e-5)$root
+                tol = root_tol)$root
       }, error = function(e) NA_real_)
 
       # Find upper bound
       upper_search <- mle_i + search_mult * se_i
       result[i, 2] <- tryCatch({
         uniroot(profile_root, c(mle_i, upper_search),
-                tol = 1e-5)$root
+                tol = root_tol)$root
       }, error = function(e) NA_real_)
     }
   }
@@ -249,6 +287,12 @@ print.likelihood_interval <- function(x, ...) {
 #' - Visualizing the likelihood surface
 #' - Computing likelihood intervals
 #' - Eliminating nuisance parameters
+#'
+#' Nuisance parameters use the same local BFGS/Nelder-Mead profiling strategy
+#' as [likelihood_interval()]. Failed optimization returns `NA` with a warning;
+#' in particular, coupled domains may require a feasible starting value that
+#' differs from the original fit. These local optimizers do not establish a
+#' global maximum for multimodal likelihoods.
 #'
 #' @param x A fisher_mle object
 #' @param data Data frame used for likelihood computation
@@ -295,16 +339,15 @@ profile_loglik.fisher_mle <- function(x, data, model, param,
     }
 
     init_nuisance <- theta_hat[nuisance_idx]
-    opt_fn <- function(nuisance) {
+    nuisance_loglik <- function(nuisance) {
       theta_full <- numeric(p)
       theta_full[param] <- theta_i
       theta_full[nuisance_idx] <- nuisance
       names(theta_full) <- names(theta_hat)
-      -ll(data, theta_full, ...)
+      ll(data, theta_full, ...)
     }
-    opt <- optim(init_nuisance, opt_fn, method = "BFGS",
-                 control = list(maxit = 100))
-    -opt$value
+    .profile_optimum(nuisance_loglik, init_nuisance,
+      .profile_parameter_scale(init_nuisance, se_vals[nuisance_idx]))
   }
 
   if (length(param) == 1) {
